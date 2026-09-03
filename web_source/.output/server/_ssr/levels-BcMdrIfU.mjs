@@ -1,0 +1,948 @@
+//#region node_modules/.nitro/vite/services/ssr/assets/levels-BcMdrIfU.js
+var G = (x, y, w, h) => ({
+	x,
+	y,
+	w,
+	h
+});
+var WORLDS = [
+	{
+		id: 1,
+		name: "DAĞ YOLU",
+		accent: "mountain",
+		levels: [1, 5]
+	},
+	{
+		id: 2,
+		name: "UZAY",
+		accent: "space",
+		levels: [6, 10]
+	},
+	{
+		id: 3,
+		name: "ŞEHİR",
+		accent: "city",
+		levels: [11, 15]
+	},
+	{
+		id: 4,
+		name: "LABİRENT",
+		accent: "maze",
+		levels: [16, 20]
+	},
+	{
+		id: 5,
+		name: "TEHLİKELİ DÜNYA",
+		accent: "danger",
+		levels: [21, 25]
+	},
+	{
+		id: 6,
+		name: "SENİN DÜNYAN",
+		accent: "yours",
+		levels: [26, 30]
+	}
+];
+var LEVELS = [
+	{
+		id: 1,
+		world: 1,
+		name: "İLK ÇİZGİ",
+		width: 1e3,
+		gravity: 1,
+		ink: 800,
+		starInk: 420,
+		starTime: 16,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 880,
+			y: 470
+		},
+		ground: [G(0, 470, 330, 130), G(620, 470, 380, 130)],
+		hint: "Uçurumun üzerine düz bir çizgi çiz."
+	},
+	{
+		id: 2,
+		world: 1,
+		name: "KÖPRÜ",
+		width: 1200,
+		gravity: 1,
+		ink: 900,
+		starInk: 520,
+		starTime: 18,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1090,
+			y: 470
+		},
+		ground: [G(0, 470, 280, 130), G(830, 470, 370, 130)],
+		hint: "Boşluk büyüdü. Uzun ama sağlam bir köprü çiz."
+	},
+	{
+		id: 3,
+		world: 1,
+		name: "RAMPA",
+		width: 1200,
+		gravity: 1,
+		ink: 900,
+		starInk: 500,
+		starTime: 20,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1060,
+			y: 320
+		},
+		ground: [G(0, 470, 320, 130), G(700, 320, 500, 280)],
+		hint: "Yukarı çıkmak için eğimli bir rampa çiz."
+	},
+	{
+		id: 4,
+		world: 1,
+		name: "DÜŞEN YOL",
+		width: 1300,
+		gravity: 1,
+		ink: 950,
+		starInk: 560,
+		starTime: 22,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1190,
+			y: 470
+		},
+		ground: [G(0, 470, 300, 130), G(940, 470, 360, 130)],
+		fallers: [G(520, 470, 130, 26)],
+		checkpoints: [{
+			x: 585,
+			y: 460
+		}],
+		hint: "Ortadaki platform kalıcı değil, kendi yolunu çiz."
+	},
+	{
+		id: 5,
+		world: 1,
+		name: "İKİ ÇİZGİ",
+		width: 1400,
+		gravity: 1,
+		ink: 1e3,
+		starInk: 640,
+		starTime: 26,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1290,
+			y: 250
+		},
+		ground: [
+			G(0, 470, 280, 130),
+			G(620, 430, 200, 170),
+			G(1050, 250, 350, 350)
+		],
+		hint: "Tek çizgi yetmez: önce köprü, sonra rampa."
+	},
+	{
+		id: 6,
+		world: 2,
+		name: "DUVAR",
+		width: 1300,
+		gravity: .55,
+		ink: 950,
+		starInk: 560,
+		starTime: 24,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1180,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 560, 130),
+			G(560, 250, 60, 350),
+			G(800, 470, 500, 130)
+		],
+		hint: "Düşük yer çekimi. Duvarı aşmak için rampa çiz."
+	},
+	{
+		id: 7,
+		world: 2,
+		name: "ZIPLAMA",
+		width: 1500,
+		gravity: .5,
+		ink: 900,
+		starInk: 520,
+		starTime: 24,
+		start: {
+			x: 70,
+			y: 400
+		},
+		door: {
+			x: 1380,
+			y: 300
+		},
+		ground: [
+			G(0, 440, 300, 160),
+			G(700, 470, 160, 130),
+			G(1150, 300, 350, 300)
+		],
+		hint: "Uzayda zıplama uzundur. Sıçrama rampası çiz."
+	},
+	{
+		id: 8,
+		world: 2,
+		name: "DİKENLER",
+		width: 1400,
+		gravity: .6,
+		ink: 900,
+		starInk: 540,
+		starTime: 26,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1300,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 320, 130),
+			G(320, 520, 640, 80),
+			G(960, 470, 440, 130)
+		],
+		spikes: [G(340, 495, 600, 26)],
+		hint: "Dikenlere değme. Üstlerinden geçen bir köprü çiz."
+	},
+	{
+		id: 9,
+		world: 2,
+		name: "HAREKETLİ ENGEL",
+		width: 1500,
+		gravity: .6,
+		ink: 1e3,
+		starInk: 620,
+		starTime: 30,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1390,
+			y: 470
+		},
+		ground: [G(0, 470, 330, 130), G(1080, 470, 420, 130)],
+		saws: [{
+			x: 700,
+			y: 380,
+			r: 34,
+			ay: 110,
+			speed: 1.1
+		}],
+		checkpoints: [{
+			x: 620,
+			y: 400
+		}],
+		hint: "Testere iner çıkar. Zamanlamanı çizginle ayarla."
+	},
+	{
+		id: 10,
+		world: 2,
+		name: "ZAMAN",
+		width: 1500,
+		gravity: .6,
+		ink: 1e3,
+		starInk: 620,
+		starTime: 22,
+		timeLimit: 40,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1400,
+			y: 380
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(650, 470, 180, 130),
+			G(1150, 380, 350, 220)
+		],
+		hint: "Süren sınırlı. Hızlı düşün, hızlı çiz."
+	},
+	{
+		id: 11,
+		world: 3,
+		name: "ÇATILAR",
+		width: 1600,
+		gravity: 1,
+		ink: 1e3,
+		starInk: 620,
+		starTime: 28,
+		start: {
+			x: 70,
+			y: 380
+		},
+		door: {
+			x: 1500,
+			y: 300
+		},
+		ground: [
+			G(0, 420, 260, 180),
+			G(520, 350, 200, 250),
+			G(980, 470, 200, 130),
+			G(1330, 300, 270, 300)
+		],
+		hint: "Çatıdan çatıya kendi yolunu çiz."
+	},
+	{
+		id: 12,
+		world: 3,
+		name: "ASANSÖR",
+		width: 1500,
+		gravity: 1,
+		ink: 1e3,
+		starInk: 600,
+		starTime: 30,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1400,
+			y: 230
+		},
+		ground: [G(0, 470, 300, 130), G(1150, 230, 350, 370)],
+		movers: [{
+			x: 620,
+			y: 470,
+			w: 160,
+			h: 24,
+			ay: 130,
+			speed: .9
+		}],
+		hint: "Asansör platformunu yakala, gerisini sen çiz."
+	},
+	{
+		id: 13,
+		world: 3,
+		name: "KAYGAN ÇATI",
+		width: 1500,
+		gravity: 1,
+		ink: 1e3,
+		starInk: 620,
+		starTime: 28,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1390,
+			y: 470
+		},
+		ground: [G(0, 470, 300, 130), G(1080, 470, 420, 130)],
+		ice: [G(520, 430, 340, 24)],
+		hint: "Buz kaygan: hız kazanmak için kullan."
+	},
+	{
+		id: 14,
+		world: 3,
+		name: "TRAFİK",
+		width: 1600,
+		gravity: 1,
+		ink: 1050,
+		starInk: 650,
+		starTime: 32,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1500,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 320, 130),
+			G(700, 470, 200, 130),
+			G(1200, 470, 400, 130)
+		],
+		saws: [{
+			x: 520,
+			y: 400,
+			r: 30,
+			ax: 120,
+			speed: 1.4
+		}, {
+			x: 1050,
+			y: 400,
+			r: 30,
+			ax: 120,
+			speed: 1.8
+		}],
+		checkpoints: [{
+			x: 760,
+			y: 440
+		}],
+		hint: "İki hareketli tehlike. Aralarından geç."
+	},
+	{
+		id: 15,
+		world: 3,
+		name: "GÖKDELEN",
+		width: 1500,
+		gravity: 1,
+		ink: 1100,
+		starInk: 700,
+		starTime: 34,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1380,
+			y: 170
+		},
+		ground: [
+			G(0, 470, 280, 130),
+			G(560, 380, 160, 220),
+			G(900, 280, 160, 320),
+			G(1240, 170, 260, 430)
+		],
+		hint: "Basamak basamak yukarı çiz."
+	},
+	{
+		id: 16,
+		world: 4,
+		name: "DAR GEÇİT",
+		width: 1400,
+		gravity: 1,
+		ink: 1e3,
+		starInk: 600,
+		starTime: 28,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1300,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(600, 0, 60, 330),
+			G(900, 470, 500, 130)
+		],
+		spikes: [G(320, 560, 560, 30)],
+		hint: "Tavandaki duvarın altından geçmelisin."
+	},
+	{
+		id: 17,
+		world: 4,
+		name: "ÇIKMAZ",
+		width: 1500,
+		gravity: 1,
+		ink: 1050,
+		starInk: 640,
+		starTime: 32,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1400,
+			y: 250
+		},
+		ground: [
+			G(0, 470, 320, 130),
+			G(700, 470, 120, 130),
+			G(700, 0, 120, 300),
+			G(1150, 250, 350, 350)
+		],
+		hint: "Duvarların arasındaki boşluğu bul ve oradan geç."
+	},
+	{
+		id: 18,
+		world: 4,
+		name: "İKİ KAT",
+		width: 1600,
+		gravity: 1,
+		ink: 1100,
+		starInk: 680,
+		starTime: 34,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1500,
+			y: 200
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(560, 470, 400, 40),
+			G(900, 200, 300, 40),
+			G(1330, 200, 270, 400)
+		],
+		spikes: [G(300, 570, 260, 30)],
+		hint: "Alt kattan üst kata geçmelisin."
+	},
+	{
+		id: 19,
+		world: 4,
+		name: "SARKAÇ",
+		width: 1600,
+		gravity: 1,
+		ink: 1100,
+		starInk: 680,
+		starTime: 36,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1500,
+			y: 400
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(760, 430, 180, 40),
+			G(1250, 470, 350, 130)
+		],
+		saws: [{
+			x: 1050,
+			y: 330,
+			r: 32,
+			ax: 90,
+			ay: 90,
+			speed: 1.3
+		}],
+		checkpoints: [{
+			x: 840,
+			y: 400
+		}],
+		hint: "Çapraz hareket eden testereyi izle."
+	},
+	{
+		id: 20,
+		world: 4,
+		name: "LABİRENT SONU",
+		width: 1700,
+		gravity: 1,
+		ink: 1150,
+		starInk: 720,
+		starTime: 40,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1600,
+			y: 160
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(520, 0, 60, 300),
+			G(760, 470, 400, 40),
+			G(1100, 160, 60, 260),
+			G(1400, 160, 300, 440)
+		],
+		checkpoints: [{
+			x: 820,
+			y: 430
+		}],
+		hint: "Alçal, ilerle, sonra yüksel."
+	},
+	{
+		id: 21,
+		world: 5,
+		name: "DİKEN TARLASI",
+		width: 1600,
+		gravity: 1,
+		ink: 1050,
+		starInk: 640,
+		starTime: 30,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1500,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(300, 540, 900, 60),
+			G(1200, 470, 400, 130)
+		],
+		spikes: [G(320, 515, 400, 26), G(800, 515, 380, 26)],
+		checkpoints: [{
+			x: 760,
+			y: 500
+		}],
+		hint: "İki diken sırası. Aralarına in, sonra yeniden çık."
+	},
+	{
+		id: 22,
+		world: 5,
+		name: "TESTERE HATTI",
+		width: 1700,
+		gravity: 1,
+		ink: 1100,
+		starInk: 680,
+		starTime: 34,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1600,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(760, 470, 200, 130),
+			G(1300, 470, 400, 130)
+		],
+		saws: [{
+			x: 520,
+			y: 400,
+			r: 30,
+			ay: 120,
+			speed: 1.5
+		}, {
+			x: 1120,
+			y: 400,
+			r: 30,
+			ay: 120,
+			speed: 1.1
+		}],
+		checkpoints: [{
+			x: 820,
+			y: 440
+		}],
+		hint: "Zamanlama her şeydir."
+	},
+	{
+		id: 23,
+		world: 5,
+		name: "DÜŞEN TUZAK",
+		width: 1700,
+		gravity: 1,
+		ink: 1150,
+		starInk: 700,
+		starTime: 36,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1600,
+			y: 400
+		},
+		ground: [G(0, 470, 300, 130), G(1350, 400, 350, 200)],
+		fallers: [G(600, 460, 140, 24), G(950, 440, 140, 24)],
+		spikes: [G(300, 570, 1040, 30)],
+		hint: "Platformlar dayanmaz. Kendi köprünü çiz."
+	},
+	{
+		id: 24,
+		world: 5,
+		name: "KAYGAN TEHLİKE",
+		width: 1700,
+		gravity: 1,
+		ink: 1150,
+		starInk: 720,
+		starTime: 36,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1600,
+			y: 300
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(700, 470, 300, 130),
+			G(1300, 300, 400, 300)
+		],
+		ice: [G(700, 446, 300, 24)],
+		spikes: [G(1010, 560, 280, 30)],
+		saws: [{
+			x: 1150,
+			y: 380,
+			r: 30,
+			ay: 100,
+			speed: 1.6
+		}],
+		checkpoints: [{
+			x: 740,
+			y: 430
+		}],
+		hint: "Buzda durmak zor. Rampanı iyi hesapla."
+	},
+	{
+		id: 25,
+		world: 5,
+		name: "KAOS",
+		width: 1800,
+		gravity: 1,
+		ink: 1200,
+		starInk: 760,
+		starTime: 42,
+		timeLimit: 70,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1700,
+			y: 470
+		},
+		ground: [
+			G(0, 470, 300, 130),
+			G(760, 500, 200, 100),
+			G(1400, 470, 400, 130)
+		],
+		spikes: [G(770, 475, 180, 26)],
+		saws: [{
+			x: 520,
+			y: 380,
+			r: 28,
+			ay: 130,
+			speed: 1.7
+		}, {
+			x: 1180,
+			y: 380,
+			r: 28,
+			ax: 130,
+			speed: 1.4
+		}],
+		movers: [{
+			x: 1050,
+			y: 470,
+			w: 140,
+			h: 24,
+			ay: 120,
+			speed: 1
+		}],
+		checkpoints: [{
+			x: 800,
+			y: 470
+		}],
+		hint: "Her şey aynı anda. Sakin ol ve çiz."
+	},
+	{
+		id: 26,
+		world: 6,
+		name: "BOŞ SAYFA",
+		width: 1700,
+		gravity: .9,
+		ink: 1200,
+		starInk: 760,
+		starTime: 34,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1600,
+			y: 260
+		},
+		ground: [G(0, 470, 260, 130), G(1400, 260, 300, 340)],
+		hint: "Aradaki her şeyi sen çizeceksin."
+	},
+	{
+		id: 27,
+		world: 6,
+		name: "UÇURUM",
+		width: 1800,
+		gravity: .9,
+		ink: 1250,
+		starInk: 780,
+		starTime: 38,
+		start: {
+			x: 70,
+			y: 300
+		},
+		door: {
+			x: 1700,
+			y: 470
+		},
+		ground: [
+			G(0, 340, 260, 260),
+			G(900, 470, 200, 130),
+			G(1450, 470, 350, 130)
+		],
+		spikes: [G(1100, 570, 350, 30)],
+		checkpoints: [{
+			x: 950,
+			y: 440
+		}],
+		hint: "Yukarıdan aşağı: iniş de bir sanattır."
+	},
+	{
+		id: 28,
+		world: 6,
+		name: "ZİKZAK",
+		width: 1800,
+		gravity: .9,
+		ink: 1250,
+		starInk: 800,
+		starTime: 42,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1700,
+			y: 180
+		},
+		ground: [
+			G(0, 470, 260, 130),
+			G(600, 380, 60, 220),
+			G(1050, 260, 60, 340),
+			G(1500, 180, 300, 420)
+		],
+		saws: [{
+			x: 850,
+			y: 300,
+			r: 28,
+			ay: 110,
+			speed: 1.5
+		}],
+		checkpoints: [{
+			x: 630,
+			y: 350
+		}],
+		hint: "Basamaklar dar. Rampalarını sırayla çiz."
+	},
+	{
+		id: 29,
+		world: 6,
+		name: "SON ENGEL",
+		width: 1900,
+		gravity: .9,
+		ink: 1300,
+		starInk: 820,
+		starTime: 46,
+		timeLimit: 80,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1800,
+			y: 300
+		},
+		ground: [
+			G(0, 470, 260, 130),
+			G(700, 470, 180, 130),
+			G(1200, 470, 60, 130),
+			G(1550, 300, 350, 300)
+		],
+		spikes: [G(880, 560, 320, 30)],
+		saws: [{
+			x: 480,
+			y: 380,
+			r: 30,
+			ay: 120,
+			speed: 1.6
+		}, {
+			x: 1380,
+			y: 360,
+			r: 30,
+			ax: 110,
+			speed: 1.5
+		}],
+		movers: [{
+			x: 1e3,
+			y: 430,
+			w: 130,
+			h: 22,
+			ax: 120,
+			speed: 1.1
+		}],
+		checkpoints: [{
+			x: 740,
+			y: 440
+		}],
+		hint: "Öğrendiğin her şeyi kullan."
+	},
+	{
+		id: 30,
+		world: 6,
+		name: "SON ÇİZGİ",
+		width: 2e3,
+		gravity: .9,
+		ink: 1400,
+		starInk: 900,
+		starTime: 55,
+		start: {
+			x: 70,
+			y: 430
+		},
+		door: {
+			x: 1900,
+			y: 200
+		},
+		ground: [
+			G(0, 470, 260, 130),
+			G(760, 520, 240, 80),
+			G(1300, 380, 60, 220),
+			G(1650, 200, 350, 400)
+		],
+		spikes: [G(770, 495, 220, 26), G(1e3, 570, 300, 30)],
+		saws: [
+			{
+				x: 520,
+				y: 380,
+				r: 30,
+				ay: 130,
+				speed: 1.7
+			},
+			{
+				x: 1150,
+				y: 330,
+				r: 30,
+				ax: 120,
+				ay: 80,
+				speed: 1.4
+			},
+			{
+				x: 1500,
+				y: 300,
+				r: 30,
+				ay: 120,
+				speed: 1.9
+			}
+		],
+		movers: [{
+			x: 1420,
+			y: 460,
+			w: 140,
+			h: 22,
+			ay: 130,
+			speed: 1
+		}],
+		checkpoints: [{
+			x: 800,
+			y: 500
+		}],
+		hint: "Son çizgiyi sen çiz."
+	}
+];
+//#endregion
+export { WORLDS as n, LEVELS as t };

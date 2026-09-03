@@ -1,0 +1,8 @@
+{
+  "name": "Çöp Adam: Son Çizgi",
+  "description": "Çizdiğin çizgiler gerçek fizik nesnelerine dönüşür! Çöp adamı kendi çizgilerinle son çizgiye ulaştır.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
