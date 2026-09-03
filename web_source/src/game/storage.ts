@@ -69,19 +69,30 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "minimalist", name: "MİNİMALİST", desc: "Bir bölümü çok az çizgiyle bitir." },
   { id: "speedster", name: "HIZLI ÇÖP ADAM", desc: "5 bölümü rekor sürede tamamla." },
   { id: "perfect10", name: "MÜKEMMEL ÇÖZÜM", desc: "10 bölümü 3 yıldızla tamamla." },
+  { id: "perfect25", name: "USTA ÇİZER", desc: "25 bölümü 3 yıldızla tamamla." },
+  { id: "perfect50", name: "EFSANE ÇİZER", desc: "50 bölümü 3 yıldızla tamamla." },
+  { id: "halfway", name: "YARI YOL", desc: "50 bölümü tamamla." },
+  { id: "centurion", name: "YÜZÜNCÜ ÇİZGİ", desc: "100 bölümü tamamla." },
   { id: "worlds", name: "DÜNYA ÇİZERİ", desc: "Tüm dünyaların kilidini aç." },
-  { id: "final", name: "SON ÇİZGİ", desc: "Final bölümünü tamamla." },
+  { id: "final", name: "SONSUZ ÇİZGİ", desc: "100. final bölümünü tamamla." },
 ];
 
 export function evaluateAchievements(p: Progress): string[] {
   const got = new Set(p.achievements);
   const entries = Object.entries(p.levels);
+  const countWon = entries.length;
+  const countThreeStars = entries.filter(([, l]) => l.stars === 3).length;
+
   if (p.levels[1]) got.add("first");
   if (p.totalInk >= 5000) got.add("ink-master");
   if (entries.some(([, l]) => l.stars >= 2)) got.add("minimalist");
   if (entries.filter(([, l]) => l.stars >= 3).length >= 5) got.add("speedster");
-  if (entries.filter(([, l]) => l.stars === 3).length >= 10) got.add("perfect10");
-  if (p.unlocked >= 26) got.add("worlds");
-  if (p.levels[30]) got.add("final");
+  if (countThreeStars >= 10) got.add("perfect10");
+  if (countThreeStars >= 25) got.add("perfect25");
+  if (countThreeStars >= 50) got.add("perfect50");
+  if (countWon >= 50) got.add("halfway");
+  if (countWon >= 100) got.add("centurion");
+  if (p.unlocked >= 91) got.add("worlds");
+  if (p.levels[100]) got.add("final");
   return [...got];
 }
