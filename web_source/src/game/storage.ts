@@ -12,6 +12,7 @@ export interface Progress {
   totalInk: number;
   sound: boolean;
   music: boolean;
+  lang?: string;
 }
 
 const KEY = "cop-adam-son-cizgi-v1";
@@ -23,6 +24,7 @@ export const defaultProgress = (): Progress => ({
   totalInk: 0,
   sound: true,
   music: true,
+  lang: "tr",
 });
 
 export function loadProgress(): Progress {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ACHIEVEMENTS, loadProgress, type Progress, defaultProgress } from "../game/storage";
+import { t } from "../game/i18n";
 
 export const Route = createFileRoute("/achievements")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/achievements")({
 
 function AchievementsPage() {
   const [p, setP] = useState<Progress>(defaultProgress());
+  const lang = p.lang || "tr";
+
   useEffect(() => setP(loadProgress()), []);
 
   return (
@@ -25,10 +28,14 @@ function AchievementsPage() {
       <div className="max-w-md landscape:max-w-xl mx-auto">
         <div className="flex items-center gap-3">
           <Link to="/" className="btn-ink small">←</Link>
-          <h1 className="font-hand text-4xl font-bold">BAŞARILAR</h1>
+          <h1 className="font-hand text-4xl font-bold">{t("achievements", lang)}</h1>
         </div>
         <p className="font-hand opacity-60 mt-1">
-          {p.achievements.length} / {ACHIEVEMENTS.length} kazanıldı · Toplam çizgi: {Math.round(p.totalInk)}
+          {t("achievements_summary", lang, {
+            count: p.achievements.length,
+            total: ACHIEVEMENTS.length,
+            ink: Math.round(p.totalInk),
+          })}
         </p>
         <div className="flex flex-col gap-3 mt-5">
           {ACHIEVEMENTS.map((a) => {

@@ -21,7 +21,10 @@ import androidx.webkit.WebViewAssetLoader
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var splashOverlay: View
     private lateinit var assetLoader: WebViewAssetLoader
+    private var isSplashDismissed = false
+    private val startTime = System.currentTimeMillis()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,12 +36,16 @@ class MainActivity : AppCompatActivity() {
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.systemBars())
 
-        webView = WebView(this).apply {
+        setContentView(R.layout.activity_main)
+
+        webView = findViewById(R.id.webView)
+        splashOverlay = findViewById(R.id.splashOverlay)
+
+        webView.apply {
             setBackgroundColor(0xFFF7F4EC.toInt())
             overScrollMode = View.OVER_SCROLL_NEVER
             isHapticFeedbackEnabled = true
         }
-        setContentView(webView)
 
         assetLoader = WebViewAssetLoader.Builder()
             .setDomain("appassets.androidplatform.net")
@@ -113,6 +120,11 @@ class MainActivity : AppCompatActivity() {
                 return null
             }
 
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                dismissSplash()
+            }
+
             override fun shouldOverrideUrlLoading(
                 view: WebView,
                 request: WebResourceRequest
@@ -129,6 +141,11 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         }
+
+        // Safety fallback: dismiss splash after 2.5s if not already dismissed
+        splashOverlay.postDelayed({
+            dismissSplash()
+        }, 2500)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -147,6 +164,25 @@ class MainActivity : AppCompatActivity() {
         })
 
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+    }
+
+    private fun dismissSplash() {
+        if (isSplashDismissed) return
+        isSplashDismissed = true
+
+        val elapsed = System.currentTimeMillis() - startTime
+        val minDisplayDuration = 800L
+        val delay = maxOf(0L, minDisplayDuration - elapsed)
+
+        splashOverlay.postDelayed({
+            splashOverlay.animate()
+                .alpha(0f)
+                .setDuration(350)
+                .withEndAction {
+                    splashOverlay.visibility = View.GONE
+                }
+                .start()
+        }, delay)
     }
 
     override fun onPause() {

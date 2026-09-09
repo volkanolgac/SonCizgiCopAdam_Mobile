@@ -6,6 +6,7 @@ import { LEVELS } from "../game/levels";
 import type { Vec } from "../game/types";
 import { playSfx, setSoundEnabled } from "../game/audio";
 import { loadProgress, saveProgress, evaluateAchievements } from "../game/storage";
+import { t } from "../game/i18n";
 import type { GameState } from "../game/engine";
 
 interface Props {
@@ -435,19 +436,20 @@ export function GameScreen({ levelId }: Props) {
 
   const inkPct = state ? Math.round((1 - state.inkUsed / state.inkBudget) * 100) : 100;
   const phase = state?.phase ?? "ready";
+  const lang = loadProgress().lang || "tr";
 
   return (
     <div className="fixed inset-0 flex flex-col bg-[#f7f4ec] select-none" style={{ touchAction: "none" }}>
       {/* HUD */}
       <div className="flex items-center gap-2 px-3 py-2 landscape:py-1 z-10">
-        <Link to="/levels" className="btn-ink small" aria-label="Bölümler" onClick={cancelPreviewOnAction}>
+        <Link to="/levels" className="btn-ink small" aria-label={t("levels", lang)} onClick={cancelPreviewOnAction}>
           ☰
         </Link>
         <div className="font-hand text-lg leading-none">
-          <span className="opacity-60">BÖLÜM {level.id}</span> · {level.name}
+          <span className="opacity-60">{t("level", lang)} {level.id}</span> · {level.name}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="font-hand text-lg" aria-label="can">
+          <span className="font-hand text-lg" aria-label={t("lives", lang)}>
             {"♥".repeat(Math.max(0, state?.lives ?? 3))}
             <span className="opacity-25">{"♥".repeat(Math.max(0, 3 - (state?.lives ?? 3)))}</span>
           </span>
@@ -486,8 +488,8 @@ export function GameScreen({ levelId }: Props) {
                 : "opacity-60 hover:opacity-100"
             }`}
             onClick={() => selectMode("draw")}
-            aria-label="Çizgi Çizme Modu (Kalem)"
-            title="Çizgi Modu (Kalem)"
+            aria-label={t("draw_mode", lang)}
+            title={t("draw_mode", lang)}
           >
             {/* White pencil SVG icon */}
             <svg
@@ -510,8 +512,8 @@ export function GameScreen({ levelId }: Props) {
                 : "opacity-60 hover:opacity-100"
             }`}
             onClick={() => selectMode("pan")}
-            aria-label="Ekran Kaydırma Modu (El)"
-            title="Kaydırma Modu (El)"
+            aria-label={t("pan_mode", lang)}
+            title={t("pan_mode", lang)}
           >
             {/* White hand drag SVG icon */}
             <svg
@@ -529,18 +531,43 @@ export function GameScreen({ levelId }: Props) {
               <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
             </svg>
           </button>
+
+          {/* Landscape Start / Play button under Pencil and Hand */}
+          {phase === "ready" && (
+            <button
+              className={`hidden landscape:flex btn-ink small !bg-[#111111] !border-[#111111] text-white items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg animate-pulse hover:animate-none ${
+                isReturningToStart ? "opacity-60 cursor-wait" : "hover:ring-2 hover:ring-[#111111] hover:ring-offset-2 hover:ring-offset-[#f7f4ec]"
+              }`}
+              onClick={start}
+              disabled={isReturningToStart}
+              aria-label={t("start_btn", lang)}
+              title={t("start_btn", lang)}
+            >
+              {isReturningToStart ? (
+                <span className="text-sm">⏳</span>
+              ) : (
+                /* White solid play triangle */
+                <svg
+                  className="w-5 h-5 text-white ml-0.5 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
 
         {/* toolbar */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-          <button className="btn-ink small" onClick={handleUndo} aria-label="Geri al" title="Geri Al">↩</button>
-          <button className="btn-ink small" onClick={handleClear} aria-label="Temizle" title="Temizle">✕</button>
-          <button className="btn-ink small" onClick={handleRetry} aria-label="Yeniden dene" title="Yeniden Dene">⟲</button>
+          <button className="btn-ink small" onClick={handleUndo} aria-label={t("undo", lang)} title={t("undo", lang)}>↩</button>
+          <button className="btn-ink small" onClick={handleClear} aria-label={t("clear", lang)} title={t("clear", lang)}>✕</button>
+          <button className="btn-ink small" onClick={handleRetry} aria-label={t("retry", lang)} title={t("retry", lang)}>⟲</button>
           <button
             className={`btn-ink small transition-colors ${isPreviewing ? "bg-ink text-[#f7f4ec]" : ""}`}
             onClick={togglePreview}
-            aria-label="Parkuru Önizle"
-            title="Parkuru Önizle"
+            aria-label={t("preview", lang)}
+            title={t("preview", lang)}
           >
             👁
           </button>
@@ -551,8 +578,7 @@ export function GameScreen({ levelId }: Props) {
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
             <div className="paper-card py-1 px-3 flex items-center gap-2 bg-[#fffdf7]/95 shadow-md">
               <span className="text-base animate-pulse">👁</span>
-              <span className="font-hand text-lg font-bold tracking-wide">PARKUR ÖNİZLEMESİ</span>
-              <span className="font-hand text-xs opacity-60 hidden sm:inline">· Dokunarak geç</span>
+              <span className="font-hand text-lg font-bold tracking-wide">{t("preview_mode", lang)}</span>
             </div>
           </div>
         )}
@@ -562,7 +588,7 @@ export function GameScreen({ levelId }: Props) {
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
             <div className="paper-card py-1 px-3 flex items-center gap-2 bg-[#fffdf7]/95 shadow-md animate-pulse">
               <span className="text-base">⏳</span>
-              <span className="font-hand text-lg font-bold tracking-wide">BAŞLANGIÇA DÖNÜLÜYOR...</span>
+              <span className="font-hand text-lg font-bold tracking-wide">{t("returning", lang)}</span>
             </div>
           </div>
         )}
@@ -572,29 +598,38 @@ export function GameScreen({ levelId }: Props) {
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
             <div className="paper-card py-1 px-3 flex items-center gap-2 bg-[#fffdf7]/95 shadow-md">
               <span className="text-base">✋</span>
-              <span className="font-hand text-lg font-bold tracking-wide">KAYDIRMA MODU</span>
-              <span className="font-hand text-xs opacity-60 hidden sm:inline">· Sağa/sola sürükle, çizmek için ✏️ seç</span>
+              <span className="font-hand text-lg font-bold tracking-wide">{t("pan_mode", lang)}</span>
+              <span className="font-hand text-xs opacity-60 hidden sm:inline">· {t("pan_subhint", lang)}</span>
             </div>
           </div>
         )}
 
-        {/* ready overlay */}
+        {/* ready overlay (portrait: big bottom card, landscape: hidden as it shrinks into the toolbar play button) */}
         {phase === "ready" && (
-          <div className="absolute inset-x-0 bottom-3 landscape:bottom-2 flex flex-col items-center justify-end pointer-events-none px-4 z-10">
-            <div className="paper-card max-w-xs landscape:max-w-sm w-full text-center pointer-events-auto py-2.5 px-4 landscape:py-1.5 landscape:px-3">
+          <div className="absolute inset-x-0 bottom-3 flex flex-col items-center justify-end pointer-events-none px-4 z-10 landscape:hidden">
+            <div className="paper-card max-w-xs w-full text-center pointer-events-auto py-2.5 px-4 transition-all duration-300">
               <button
-                className={`btn-ink big landscape:py-1.5 landscape:text-xl w-full ${
+                className={`btn-ink big w-full ${
                   isReturningToStart ? "opacity-75 cursor-wait" : ""
                 }`}
                 onClick={start}
                 disabled={isReturningToStart}
               >
-                {isReturningToStart ? "⏳ BAŞLIYOR..." : "▶ BAŞLA"}
+                {isReturningToStart ? t("starting", lang) : t("start_btn", lang)}
               </button>
-              <p className="font-hand text-xl landscape:text-lg mt-1">{level.hint}</p>
-              <p className="font-hand text-sm landscape:text-xs opacity-60 mt-0.5">
-                {mode === "pan" ? "Parkuru incele, çizmek için ✏️ seç!" : "Parmağınla çiz, sonra başlat!"}
+              <p className="font-hand text-xl mt-1">{level.hint}</p>
+              <p className="font-hand text-sm opacity-60 mt-0.5">
+                {mode === "pan" ? t("pan_subhint", lang) : t("ready_subhint", lang)}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* landscape subtle level hint pill */}
+        {phase === "ready" && (
+          <div className="hidden landscape:flex absolute bottom-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            <div className="paper-card py-1 px-3 bg-[#fffdf7]/90 shadow-sm text-center">
+              <span className="font-hand text-sm font-bold opacity-80">{level.hint}</span>
             </div>
           </div>
         )}
@@ -610,10 +645,10 @@ export function GameScreen({ levelId }: Props) {
         {phase === "dead" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 p-4">
             <div className="paper-card text-center max-h-[95vh] overflow-y-auto">
-              <p className="font-hand text-4xl font-bold">{state?.message ?? "OOOPS!"}</p>
-              <p className="font-hand opacity-60 mt-1">Kalan can: {state?.lives}</p>
+              <p className="font-hand text-4xl font-bold">{state?.message ?? t("dead_title", lang)}</p>
+              <p className="font-hand opacity-60 mt-1">{t("remaining_lives", lang)}{state?.lives}</p>
               <div className="flex gap-2 mt-3">
-                <button className="btn-ink flex-1" onClick={handleRetry}>TEKRAR DENE</button>
+                <button className="btn-ink flex-1" onClick={handleRetry}>{t("retry", lang)}</button>
               </div>
             </div>
           </div>
@@ -623,11 +658,11 @@ export function GameScreen({ levelId }: Props) {
         {phase === "gameover" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/15 p-4">
             <div className="paper-card text-center max-h-[95vh] overflow-y-auto">
-              <p className="font-hand text-4xl font-bold">OYUN BİTTİ</p>
-              <p className="font-hand opacity-60 mt-1">Çöp adam son çizgiye ulaşamadı…</p>
+              <p className="font-hand text-4xl font-bold">{t("game_over", lang)}</p>
+              <p className="font-hand opacity-60 mt-1">{t("game_over_desc", lang)}</p>
               <div className="flex flex-col gap-2 mt-3">
-                <button className="btn-ink" onClick={handleFullRestart}>BAŞTAN BAŞLA</button>
-                <Link to="/levels" className="btn-ink ghost" onClick={cancelPreviewOnAction}>BÖLÜMLER</Link>
+                <button className="btn-ink" onClick={handleFullRestart}>{t("restart_all", lang)}</button>
+                <Link to="/levels" className="btn-ink ghost" onClick={cancelPreviewOnAction}>{t("levels", lang)}</Link>
               </div>
             </div>
           </div>
@@ -637,25 +672,25 @@ export function GameScreen({ levelId }: Props) {
         {phase === "won" && result && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 p-4">
             <div className="paper-card text-center min-w-64 max-h-[95vh] overflow-y-auto">
-              <p className="font-hand text-4xl font-bold">SON ÇİZGİ!</p>
-              <p className="text-3xl mt-1" aria-label={`${result.stars} yıldız`}>
+              <p className="font-hand text-4xl font-bold">{t("won_title", lang)}</p>
+              <p className="text-3xl mt-1" aria-label={`${result.stars} ${t("stars", lang)}`}>
                 {"★".repeat(result.stars)}
                 <span className="opacity-20">{"★".repeat(3 - result.stars)}</span>
               </p>
               <p className="font-hand mt-1 opacity-70">
-                Süre {state?.time.toFixed(1)}s · Çizgi {Math.round(state?.inkUsed ?? 0)}
+                {t("time", lang)} {state?.time.toFixed(1)}s · {t("ink", lang)} {Math.round(state?.inkUsed ?? 0)}
               </p>
-              <p className="font-hand text-2xl font-bold mt-1">SKOR {result.score}</p>
+              <p className="font-hand text-2xl font-bold mt-1">{t("score", lang)} {result.score}</p>
               <div className="flex flex-col gap-2 mt-3">
                 {level.id < LEVELS.length ? (
                   <button className="btn-ink" onClick={() => navigate({ to: "/play/$id", params: { id: String(level.id + 1) } })}>
-                    SONRAKİ BÖLÜM ▶
+                    {t("next_level", lang)}
                   </button>
                 ) : (
-                  <Link to="/achievements" className="btn-ink" onClick={cancelPreviewOnAction}>OYUNU BİTİRDİN! 🏆</Link>
+                  <Link to="/achievements" className="btn-ink" onClick={cancelPreviewOnAction}>{t("game_completed", lang)}</Link>
                 )}
-                <button className="btn-ink ghost" onClick={handleFullRestart}>TEKRAR OYNA</button>
-                <Link to="/levels" className="btn-ink ghost" onClick={cancelPreviewOnAction}>BÖLÜMLER</Link>
+                <button className="btn-ink ghost" onClick={handleFullRestart}>{t("play_again", lang)}</button>
+                <Link to="/levels" className="btn-ink ghost" onClick={cancelPreviewOnAction}>{t("levels", lang)}</Link>
               </div>
             </div>
           </div>
@@ -663,7 +698,7 @@ export function GameScreen({ levelId }: Props) {
 
         {outOfInk && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-hand text-lg bg-paper border-2 border-ink rounded-xl px-3 py-1">
-            MÜREKKEP BİTTİ!
+            {t("out_of_ink", lang)}
           </div>
         )}
       </div>

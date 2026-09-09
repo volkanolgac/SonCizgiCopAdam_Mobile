@@ -5,4 +5,9 @@
         <item name="android:windowBackground">#F7F4EC</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <style name="Theme.SonCizgiCopAdam.Splash" parent="Theme.SonCizgiCopAdam">
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+    </style>
 </resources>
+

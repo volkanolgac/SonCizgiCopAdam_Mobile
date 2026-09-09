@@ -5,7 +5,7 @@
     "binding": "ASSETS",
     "directory": "../public"
   },
-  "name": "tanstack-start-ts",
+  "name": "tanstack-start-ts-web-source",
   "compatibility_flags": [
     "nodejs_compat"
   ],
