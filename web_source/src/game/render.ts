@@ -176,7 +176,7 @@ export function render(
   });
 
   // door
-  drawDoor(ctx, level.door.x, level.door.y, game.state.phase === "won");
+  drawDoor(ctx, level.door.x, level.door.y, game.doorOpenAmount > 0.02, game.doorOpenAmount);
 
   // ink strokes
   ctx.lineWidth = 6;
@@ -208,7 +208,9 @@ export function render(
     ctx.stroke();
   }
 
-  drawStickman(ctx, game);
+  if (!game.playerHidden) {
+    drawStickman(ctx, game);
+  }
 
   ctx.restore();
 }
@@ -253,16 +255,43 @@ function drawStrokeSegments(
   }
 }
 
-function drawDoor(ctx: CanvasRenderingContext2D, x: number, baseY: number, open: boolean) {
+function drawDoor(ctx: CanvasRenderingContext2D, x: number, baseY: number, open: boolean, openAmount = 0) {
   const w = 46;
   const h = 74;
+  const leftX = x - w / 2;
+  const topY = baseY - h;
+
   ctx.strokeStyle = GREEN;
   ctx.lineWidth = 2.8;
-  roughRect(ctx, x - w / 2, baseY - h, w, h, 91, 1.3);
-  if (open) {
-    ctx.strokeStyle = "rgba(31,157,85,0.55)";
-    hatch(ctx, x - w / 2 + 2, baseY - h + 2, w - 4, h - 4, 8, 93);
+
+  // Door Frame
+  roughRect(ctx, leftX, topY, w, h, 91, 1.3);
+
+  if (openAmount > 0.02) {
+    // Open doorway interior (dark/hatched void inside)
+    ctx.fillStyle = "rgba(18, 60, 30, 0.35)";
+    ctx.fillRect(leftX + 2, topY + 2, w - 4, h - 4);
+    ctx.strokeStyle = "rgba(31,157,85,0.45)";
+    hatch(ctx, leftX + 2, topY + 2, w - 4, h - 4, 8, 93);
+
+    // Swinging door leaf (pivoted on left hinge at leftX)
+    const swungWidth = w * Math.cos(openAmount * (Math.PI / 2.2));
+    ctx.strokeStyle = GREEN;
+    ctx.lineWidth = 2.5;
+
+    ctx.beginPath();
+    ctx.moveTo(leftX, topY);
+    ctx.lineTo(leftX + swungWidth, topY + openAmount * 6);
+    ctx.lineTo(leftX + swungWidth, topY + h - openAmount * 6);
+    ctx.lineTo(leftX, topY + h);
+    ctx.closePath();
+    ctx.stroke();
+
+    if (swungWidth > 8) {
+      roughCircle(ctx, leftX + swungWidth - 6, topY + h / 2, 3, 95, 0.5);
+    }
   } else {
+    // Closed door handle
     roughCircle(ctx, x + w / 2 - 10, baseY - h / 2, 3.4, 95, 0.5);
   }
 }

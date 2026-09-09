@@ -68,6 +68,11 @@ export class GameEngine {
   door!: Matter.Body;
   solids: Matter.Body[] = [];
   debris: DebrisParticle[] = [];
+  doorState: "closed" | "opening" | "open" | "closing" = "closed";
+  doorOpenAmount = 0;
+  doorEntering = false;
+  doorAnimTimer = 0;
+  playerHidden = false;
   state: GameState;
   respawn: Vec;
   reachedCheckpoints = 0;
@@ -293,6 +298,11 @@ export class GameEngine {
     this.state.phase = "ready";
     this.state.message = null;
     this.animState = "idle";
+    this.doorState = "closed";
+    this.doorOpenAmount = 0;
+    this.doorEntering = false;
+    this.doorAnimTimer = 0;
+    this.playerHidden = false;
     Body.setPosition(this.player, { ...this.respawn });
     Body.setVelocity(this.player, { x: 0, y: 0 });
     for (const d of this.debris) World.remove(this.engine.world, d.body);
@@ -507,13 +517,49 @@ export class GameEngine {
       return;
     }
 
+    // door entering animation sequence
+    if (this.doorEntering) {
+      Body.setVelocity(p, { x: 0, y: 0 });
+      this.doorAnimTimer += ms;
+
+      if (this.doorAnimTimer < 300) {
+        // Door opening
+        this.doorState = "opening";
+        this.doorOpenAmount = Math.min(1, this.doorAnimTimer / 250);
+      } else if (this.doorAnimTimer < 750) {
+        // Door open, stickman steps inside
+        this.doorState = "open";
+        this.doorOpenAmount = 1.0;
+        p.position.x += (this.level.door.x - p.position.x) * 0.15;
+        p.position.y += (this.level.door.y - PLAYER_H / 2 - p.position.y) * 0.15;
+      } else if (this.doorAnimTimer < 1050) {
+        // Stickman is inside, door closing behind him
+        if (this.doorState !== "closing") {
+          this.doorState = "closing";
+          this.playerHidden = true;
+          playSfx("doorClose");
+        }
+        this.doorOpenAmount = Math.max(0, 1 - (this.doorAnimTimer - 750) / 250);
+      } else {
+        // Animation finished! Door closed, stickman disappeared inside.
+        this.doorState = "closed";
+        this.doorOpenAmount = 0;
+        this.doorEntering = false;
+        this.state.phase = "won";
+        this.animState = "win";
+        playSfx("win");
+        this.emit();
+      }
+      return;
+    }
+
     // reached the door
-    if (overlaps(p, this.door)) {
-      this.state.phase = "won";
-      this.animState = "win";
-      playSfx("door");
-      playSfx("win");
-      this.emit();
+    if (overlaps(p, this.door) && !this.doorEntering) {
+      this.doorEntering = true;
+      this.doorAnimTimer = 0;
+      this.doorState = "opening";
+      this.doorOpenAmount = 0;
+      playSfx("doorOpen");
     }
   }
 

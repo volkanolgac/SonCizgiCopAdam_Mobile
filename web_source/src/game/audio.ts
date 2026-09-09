@@ -1,4 +1,4 @@
-type Sfx = "draw" | "jump" | "star" | "win" | "fall" | "error" | "door" | "step" | "click" | "slide" | "cut";
+type Sfx = "draw" | "jump" | "star" | "win" | "fall" | "error" | "door" | "doorOpen" | "doorClose" | "step" | "click" | "slide" | "cut";
 
 let ctx: AudioContext | null = null;
 let enabled = true;
@@ -59,6 +59,15 @@ export function playSfx(name: Sfx) {
       break;
     case "door":
       tone(400, 0.2, "sine", 0.05, 800);
+      break;
+    case "doorOpen":
+      tone(620, 0.05, "triangle", 0.05, 820);
+      setTimeout(() => tone(900, 0.04, "square", 0.03), 30);
+      break;
+    case "doorClose":
+      tone(260, 0.07, "square", 0.06, 110);
+      setTimeout(() => tone(140, 0.1, "sawtooth", 0.07, 50), 35);
+      setTimeout(() => tone(520, 0.05, "triangle", 0.04), 80);
       break;
     case "fall":
       tone(400, 0.4, "sawtooth", 0.04, 90);
