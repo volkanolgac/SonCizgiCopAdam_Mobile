@@ -245,6 +245,7 @@ function drawStickman(ctx: CanvasRenderingContext2D, game: GameEngine) {
   const bob = st === "run" ? Math.sin(t * 2) * 1.2 : st === "idle" ? Math.sin(t) * 0.8 : 0;
   ctx.translate(0, bob);
   if (st === "dead") ctx.rotate(0.5 * dir);
+  else if (st === "slide") ctx.rotate(-0.26);
 
   // head
   roughCircle(ctx, 0, headY, headR, 101, 0.7);
@@ -293,6 +294,11 @@ function drawStickman(ctx: CanvasRenderingContext2D, game: GameEngine) {
     armB = 2;
     legA = 1.2;
     legB = 0.6;
+  } else if (st === "slide") {
+    armA = -0.7;
+    armB = 0.85;
+    legA = 0.85;
+    legB = 0.25;
   } else {
     armA = 0.25;
     armB = -0.25;
@@ -311,6 +317,19 @@ function drawStickman(ctx: CanvasRenderingContext2D, game: GameEngine) {
   limb(0, shoulderY, Math.PI / 2 + armB + Math.PI, 11, 106);
   limb(0, hipY, legA, 12, 107);
   limb(0, hipY, legB, 12, 108);
+
+  if (st === "slide") {
+    ctx.save();
+    ctx.strokeStyle = BLUE;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-18 * dir, hipY + 12);
+    ctx.lineTo(-6 * dir, hipY + 12);
+    ctx.moveTo(-24 * dir, hipY + 15);
+    ctx.lineTo(-10 * dir, hipY + 15);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.restore();
 }

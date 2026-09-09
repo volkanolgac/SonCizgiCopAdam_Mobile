@@ -56,15 +56,17 @@ export class GameEngine {
   respawn: Vec;
   reachedCheckpoints = 0;
   grounded = false;
+  onIce = false;
   facing = 1;
   animPhase = 0;
-  animState: "idle" | "run" | "jump" | "fall" | "dead" | "win" = "idle";
+  animState: "idle" | "run" | "jump" | "fall" | "dead" | "win" | "slide" = "idle";
   onChange: (s: GameState) => void = () => {};
   private accumulator = 0;
   private deadTimer = 0;
   private groundBody: Matter.Body | null = null;
   private lastGroundPos: Vec | null = null;
   private stepSfx = 0;
+  private slideSfx = 200;
 
   constructor(level: LevelDef) {
     this.level = level;
@@ -355,6 +357,7 @@ export class GameEngine {
       this.probe(p.position.x + 6, footY + 3);
     this.grounded = !!under && p.velocity.y >= -0.5;
     this.groundBody = this.grounded ? under : null;
+    this.onIce = this.grounded && under?.label === "ice";
 
     if (running) {
       this.state.time += ms / 1000;
@@ -368,9 +371,10 @@ export class GameEngine {
         let slope = 0;
         if (back != null && front != null) slope = clamp((front - back) / 18, -1.3, 1.3);
         const norm = Math.sqrt(1 + slope * slope);
+        const moveSpeed = this.onIce ? RUN_SPEED * 1.8 : RUN_SPEED;
         Body.setVelocity(p, {
-          x: (dir * RUN_SPEED) / norm,
-          y: slope < 0 ? (RUN_SPEED * slope) / norm : p.velocity.y,
+          x: (dir * moveSpeed) / norm,
+          y: slope < 0 ? (moveSpeed * slope) / norm : p.velocity.y,
         });
 
         // small automatic hop over low ledges
@@ -378,15 +382,25 @@ export class GameEngine {
         if (aheadLow) {
           const top = this.surfaceTop(p.position.x + dir * 13, footY - 42, 44);
           if (top != null && footY - top <= 34) {
-            Body.setVelocity(p, { x: dir * RUN_SPEED, y: -7.2 });
+            Body.setVelocity(p, { x: dir * moveSpeed, y: -7.2 });
             playSfx("jump");
             this.animState = "jump";
           }
         }
-        this.stepSfx += ms;
-        if (this.stepSfx > 260 && Math.abs(p.velocity.x) > 1) {
-          this.stepSfx = 0;
-          playSfx("step");
+
+        if (this.onIce) {
+          this.slideSfx += ms;
+          if (this.slideSfx >= 200 && Math.abs(p.velocity.x) > 1) {
+            this.slideSfx = 0;
+            playSfx("slide");
+          }
+        } else {
+          this.slideSfx = 200;
+          this.stepSfx += ms;
+          if (this.stepSfx > 260 && Math.abs(p.velocity.x) > 1) {
+            this.stepSfx = 0;
+            playSfx("step");
+          }
         }
       } else if (Math.abs(p.velocity.x) < RUN_SPEED * 0.9) {
         Body.setVelocity(p, { x: dir * RUN_SPEED * 0.9, y: p.velocity.y });
@@ -401,9 +415,9 @@ export class GameEngine {
     if (this.state.phase === "won") this.animState = "win";
     else if (this.state.phase === "dead" || this.state.phase === "gameover") this.animState = "dead";
     else if (!this.grounded) this.animState = p.velocity.y < -0.4 ? "jump" : "fall";
-    else if (running) this.animState = "run";
+    else if (running) this.animState = this.onIce ? "slide" : "run";
     else this.animState = "idle";
-    this.animPhase += (ms / 1000) * (this.animState === "run" ? 9 : 2.4);
+    this.animPhase += (ms / 1000) * (this.animState === "run" ? 9 : this.animState === "slide" ? 6 : 2.4);
 
     if (!running) {
       if (this.state.phase === "dead" || this.state.phase === "gameover") this.deadTimer += ms;

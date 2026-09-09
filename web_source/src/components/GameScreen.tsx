@@ -42,6 +42,16 @@ export function GameScreen({ levelId }: Props) {
   const [mode, setMode] = useState<"draw" | "pan">("draw");
   const [isPanning, setIsPanning] = useState(false);
   const [isReturningToStart, setIsReturningToStart] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
+
+  // reset paused state when phase changes away from running
+  useEffect(() => {
+    if (state?.phase !== "running") {
+      isPausedRef.current = false;
+      setIsPaused(false);
+    }
+  }, [state?.phase]);
 
   const manualFocusXRef = useRef<number | null>(null);
   const isPanningRef = useRef(false);
@@ -203,7 +213,9 @@ export function GameScreen({ levelId }: Props) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          eng.update(now - last);
+          if (!isPausedRef.current) {
+            eng.update(now - last);
+          }
 
           // update preview camera or returning-to-start camera if active
           let focusX: number | undefined = undefined;
@@ -380,6 +392,23 @@ export function GameScreen({ levelId }: Props) {
     }
   };
 
+  const togglePlayPause = () => {
+    const eng = engineRef.current;
+    if (!eng) return;
+
+    if (eng.state.phase === "ready") {
+      isPausedRef.current = false;
+      setIsPaused(false);
+      start();
+    } else if (eng.state.phase === "running") {
+      playSfx("click");
+      cancelPreviewOnAction();
+      const nextPaused = !isPausedRef.current;
+      isPausedRef.current = nextPaused;
+      setIsPaused(nextPaused);
+    }
+  };
+
   const togglePreview = () => {
     playSfx("click");
     userInteractedRef.current = true;
@@ -413,6 +442,8 @@ export function GameScreen({ levelId }: Props) {
   const handleRetry = () => {
     playSfx("click");
     cancelPreviewOnAction();
+    isPausedRef.current = false;
+    setIsPaused(false);
     manualFocusXRef.current = null;
     isPanningRef.current = false;
     setIsPanning(false);
@@ -425,6 +456,8 @@ export function GameScreen({ levelId }: Props) {
   const handleFullRestart = () => {
     playSfx("click");
     cancelPreviewOnAction();
+    isPausedRef.current = false;
+    setIsPaused(false);
     manualFocusXRef.current = null;
     isPanningRef.current = false;
     setIsPanning(false);
@@ -480,91 +513,110 @@ export function GameScreen({ levelId }: Props) {
         />
 
         {/* Mode toolbar (under ink bar, top-left) */}
-        <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
-          <button
-            className={`btn-ink small !bg-[#111111] !border-[#111111] text-white flex items-center justify-center transition-all ${
-              mode === "draw"
-                ? "ring-2 ring-[#111111] ring-offset-2 ring-offset-[#f7f4ec] scale-105 shadow-md"
-                : "opacity-60 hover:opacity-100"
-            }`}
-            onClick={() => selectMode("draw")}
-            aria-label={t("draw_mode", lang)}
-            title={t("draw_mode", lang)}
-          >
-            {/* White pencil SVG icon */}
-            <svg
-              className="w-5 h-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
-          <button
-            className={`btn-ink small !bg-[#111111] !border-[#111111] text-white flex items-center justify-center transition-all ${
-              mode === "pan"
-                ? "ring-2 ring-[#111111] ring-offset-2 ring-offset-[#f7f4ec] scale-105 shadow-md"
-                : "opacity-60 hover:opacity-100"
-            }`}
-            onClick={() => selectMode("pan")}
-            aria-label={t("pan_mode", lang)}
-            title={t("pan_mode", lang)}
-          >
-            {/* White hand drag SVG icon */}
-            <svg
-              className="w-5 h-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 11V6a2 2 0 0 0-4 0v4" />
-              <path d="M14 10V4a2 2 0 0 0-4 0v6" />
-              <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
-              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-            </svg>
-          </button>
+        {(() => {
+          const eng = engineRef.current;
+          const hasDrawnLine = (eng?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0;
+          const playBgClass = hasDrawnLine
+            ? "!bg-[#2e7d32] !border-[#2e7d32]"
+            : "!bg-[#d8322c] !border-[#d8322c]";
+          const showPauseIcon = phase === "running" && !isPaused;
 
-          {/* Landscape Start / Play button under Pencil and Hand */}
-          {phase === "ready" && (
-            <button
-              className={`hidden landscape:flex btn-ink small !bg-[#111111] !border-[#111111] text-white items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg animate-pulse hover:animate-none ${
-                isReturningToStart ? "opacity-60 cursor-wait" : "hover:ring-2 hover:ring-[#111111] hover:ring-offset-2 hover:ring-offset-[#f7f4ec]"
-              }`}
-              onClick={start}
-              disabled={isReturningToStart}
-              aria-label={t("start_btn", lang)}
-              title={t("start_btn", lang)}
-            >
-              {isReturningToStart ? (
-                <span className="text-sm">⏳</span>
-              ) : (
-                /* White solid play triangle */
+          return (
+            <div className="absolute top-2 left-2 flex flex-col gap-2 z-10 h-[184px]">
+              <button
+                className={`btn-ink small !w-[50px] !h-[56px] !p-0 !bg-[#111111] !border-[#111111] text-white flex items-center justify-center transition-all ${
+                  mode === "draw"
+                    ? "ring-2 ring-[#111111] ring-offset-2 ring-offset-[#f7f4ec] scale-105 shadow-md"
+                    : "opacity-60 hover:opacity-100"
+                }`}
+                onClick={() => selectMode("draw")}
+                aria-label={t("draw_mode", lang)}
+                title={t("draw_mode", lang)}
+              >
+                {/* White pencil SVG icon */}
                 <svg
-                  className="w-5 h-5 text-white ml-0.5 fill-current"
+                  className="w-5 h-5 text-white"
                   viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <path d="M8 5v14l11-7z" />
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
                 </svg>
+              </button>
+              <button
+                className={`btn-ink small !w-[50px] !h-[56px] !p-0 !bg-[#111111] !border-[#111111] text-white flex items-center justify-center transition-all ${
+                  mode === "pan"
+                    ? "ring-2 ring-[#111111] ring-offset-2 ring-offset-[#f7f4ec] scale-105 shadow-md"
+                    : "opacity-60 hover:opacity-100"
+                }`}
+                onClick={() => selectMode("pan")}
+                aria-label={t("pan_mode", lang)}
+                title={t("pan_mode", lang)}
+              >
+                {/* White hand drag SVG icon */}
+                <svg
+                  className="w-5 h-5 text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 11V6a2 2 0 0 0-4 0v4" />
+                  <path d="M14 10V4a2 2 0 0 0-4 0v6" />
+                  <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
+                  <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                </svg>
+              </button>
+
+              {/* Start / Play / Pause button under Pencil and Hand */}
+              {(phase === "ready" || phase === "running") && (
+                <button
+                  className={`flex btn-ink small !w-[50px] !h-[56px] !p-0 text-white items-center justify-center transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-xl animate-pulse ${playBgClass} ${
+                    isReturningToStart ? "opacity-60 cursor-wait" : "hover:ring-2 hover:ring-[#111111] hover:ring-offset-2 hover:ring-offset-[#f7f4ec]"
+                  }`}
+                  onClick={togglePlayPause}
+                  disabled={isReturningToStart}
+                  aria-label={showPauseIcon ? "Pause" : t("start_btn", lang)}
+                  title={showPauseIcon ? "Pause" : t("start_btn", lang)}
+                >
+                  {isReturningToStart ? (
+                    <span className="text-base">⏳</span>
+                  ) : showPauseIcon ? (
+                    /* Pause II Icon */
+                    <svg
+                      className="w-5 h-5 text-white fill-current"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                  ) : (
+                    /* Play ► Icon */
+                    <svg
+                      className="w-5 h-5 text-white fill-current ml-0.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
               )}
-            </button>
-          )}
-        </div>
+            </div>
+          );
+        })()}
 
         {/* toolbar */}
         <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-          <button className="btn-ink small" onClick={handleUndo} aria-label={t("undo", lang)} title={t("undo", lang)}>↩</button>
-          <button className="btn-ink small" onClick={handleClear} aria-label={t("clear", lang)} title={t("clear", lang)}>✕</button>
-          <button className="btn-ink small" onClick={handleRetry} aria-label={t("retry", lang)} title={t("retry", lang)}>⟲</button>
+          <button className="btn-ink small !w-10 !h-10 !p-0 flex items-center justify-center" onClick={handleUndo} aria-label={t("undo", lang)} title={t("undo", lang)}>↩</button>
+          <button className="btn-ink small !w-10 !h-10 !p-0 flex items-center justify-center" onClick={handleClear} aria-label={t("clear", lang)} title={t("clear", lang)}>✕</button>
+          <button className="btn-ink small !w-10 !h-10 !p-0 flex items-center justify-center" onClick={handleRetry} aria-label={t("retry", lang)} title={t("retry", lang)}>⟲</button>
           <button
-            className={`btn-ink small transition-colors ${isPreviewing ? "bg-ink text-[#f7f4ec]" : ""}`}
+            className={`btn-ink small !w-10 !h-10 !p-0 flex items-center justify-center transition-colors ${isPreviewing ? "bg-ink text-[#f7f4ec]" : ""}`}
             onClick={togglePreview}
             aria-label={t("preview", lang)}
             title={t("preview", lang)}
@@ -604,32 +656,14 @@ export function GameScreen({ levelId }: Props) {
           </div>
         )}
 
-        {/* ready overlay (portrait: big bottom card, landscape: hidden as it shrinks into the toolbar play button) */}
-        {phase === "ready" && (
-          <div className="absolute inset-x-0 bottom-3 flex flex-col items-center justify-end pointer-events-none px-4 z-10 landscape:hidden">
-            <div className="paper-card max-w-xs w-full text-center pointer-events-auto py-2.5 px-4 transition-all duration-300">
-              <button
-                className={`btn-ink big w-full ${
-                  isReturningToStart ? "opacity-75 cursor-wait" : ""
-                }`}
-                onClick={start}
-                disabled={isReturningToStart}
-              >
-                {isReturningToStart ? t("starting", lang) : t("start_btn", lang)}
-              </button>
-              <p className="font-hand text-xl mt-1">{level.hint}</p>
-              <p className="font-hand text-sm opacity-60 mt-0.5">
+        {/* level hint text card (shows until first line is drawn or Play button pressed) */}
+        {phase === "ready" && !((engineRef.current?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0) && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 max-w-xs sm:max-w-sm w-full px-4">
+            <div className="paper-card py-2 px-4 bg-[#fffdf7]/95 shadow-md text-center">
+              <p className="font-hand text-lg sm:text-xl font-bold opacity-90">{level.hint}</p>
+              <p className="font-hand text-xs sm:text-sm opacity-60 mt-0.5">
                 {mode === "pan" ? t("pan_subhint", lang) : t("ready_subhint", lang)}
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* landscape subtle level hint pill */}
-        {phase === "ready" && (
-          <div className="hidden landscape:flex absolute bottom-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-            <div className="paper-card py-1 px-3 bg-[#fffdf7]/90 shadow-sm text-center">
-              <span className="font-hand text-sm font-bold opacity-80">{level.hint}</span>
             </div>
           </div>
         )}
