@@ -5,10 +5,25 @@ import { playSfx } from "./audio";
 
 const { Engine, World, Bodies, Body, Composite, Query } = Matter;
 
+export interface StrokeSegment {
+  a: Vec;
+  b: Vec;
+  body: Matter.Body;
+}
+
 export interface Stroke {
   points: Vec[];
-  bodies: Matter.Body[];
+  segments: StrokeSegment[];
   length: number;
+}
+
+export interface DebrisParticle {
+  body: Matter.Body;
+  w: number;
+  h: number;
+  life: number;
+  maxLife: number;
+  rotSpeed: number;
 }
 
 export interface GameState {
@@ -52,6 +67,7 @@ export class GameEngine {
   hazards = new Set<number>();
   door!: Matter.Body;
   solids: Matter.Body[] = [];
+  debris: DebrisParticle[] = [];
   state: GameState;
   respawn: Vec;
   reachedCheckpoints = 0;
@@ -67,6 +83,7 @@ export class GameEngine {
   private lastGroundPos: Vec | null = null;
   private stepSfx = 0;
   private slideSfx = 200;
+  private lastCutSound = 0;
 
   constructor(level: LevelDef) {
     this.level = level;
@@ -202,7 +219,7 @@ export class GameEngine {
     if (length < 6) return false;
     if (length > this.inkLeft) return false;
 
-    const bodies: Matter.Body[] = [];
+    const segments: StrokeSegment[] = [];
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1]!;
       const b = pts[i]!;
@@ -215,12 +232,13 @@ export class GameEngine {
         angle: Math.atan2(b.y - a.y, b.x - a.x),
         label: "ink",
       });
-      bodies.push(body);
+      segments.push({ a, b, body });
     }
-    if (!bodies.length) return false;
+    if (!segments.length) return false;
+    const bodies = segments.map((s) => s.body);
     Composite.add(this.engine.world, bodies);
     this.solids.push(...bodies);
-    this.strokes.push({ points: pts, bodies, length });
+    this.strokes.push({ points: pts, segments, length });
     this.state.inkUsed += length;
     this.emit();
     return true;
@@ -229,14 +247,20 @@ export class GameEngine {
   undo() {
     const s = this.strokes.pop();
     if (!s) return;
-    World.remove(this.engine.world, s.bodies);
-    this.solids = this.solids.filter((b) => !s.bodies.includes(b));
+    for (const seg of s.segments) {
+      World.remove(this.engine.world, seg.body);
+      this.solids = this.solids.filter((b) => b !== seg.body);
+    }
     this.state.inkUsed = Math.max(0, this.state.inkUsed - s.length);
     this.emit();
   }
 
   clearStrokes() {
-    for (const s of this.strokes) World.remove(this.engine.world, s.bodies);
+    for (const s of this.strokes) {
+      for (const seg of s.segments) World.remove(this.engine.world, seg.body);
+    }
+    for (const d of this.debris) World.remove(this.engine.world, d.body);
+    this.debris = [];
     this.solids = this.solids.filter((b) => b.label !== "ink");
     this.strokes = [];
     this.state.inkUsed = 0;
@@ -271,6 +295,8 @@ export class GameEngine {
     this.animState = "idle";
     Body.setPosition(this.player, { ...this.respawn });
     Body.setVelocity(this.player, { x: 0, y: 0 });
+    for (const d of this.debris) World.remove(this.engine.world, d.body);
+    this.debris = [];
     for (const f of this.fallers) {
       if (f.falling) {
         Body.setStatic(f.body, true);
@@ -336,6 +362,22 @@ export class GameEngine {
         Body.setPosition(p, { x: p.position.x + (nx - prev.x), y: p.position.y + (ny - prev.y) });
       }
     }
+
+    // saw cuts on drawn lines
+    this.processSawStrokeCollisions();
+
+    // update debris particles
+    const activeDebris: DebrisParticle[] = [];
+    for (const deb of this.debris) {
+      deb.life += ms / 1000;
+      Body.setAngle(deb.body, deb.body.angle + deb.rotSpeed);
+      if (deb.life < deb.maxLife && deb.body.position.y < WORLD_HEIGHT + 150) {
+        activeDebris.push(deb);
+      } else {
+        World.remove(this.engine.world, deb.body);
+      }
+    }
+    this.debris = activeDebris;
 
     // falling traps
     for (const f of this.fallers) {
@@ -475,6 +517,95 @@ export class GameEngine {
     }
   }
 
+  private processSawStrokeCollisions() {
+    const saws = this.dynamics.filter((d) => d.kind === "saw");
+    if (!saws.length || !this.strokes.length) return;
+
+    let didCut = false;
+
+    for (const saw of saws) {
+      const cx = saw.body.position.x;
+      const cy = saw.body.position.y;
+      const sawR = (saw.body.circleRadius ?? 28) + 8; // circle radius + outer teeth
+      const sawRSq = sawR * sawR;
+
+      for (const stroke of this.strokes) {
+        const remainingSegments: StrokeSegment[] = [];
+        for (const seg of stroke.segments) {
+          const dSq = distToSegmentSq({ x: cx, y: cy }, seg.a, seg.b);
+
+          if (dSq <= sawRSq) {
+            // Cut this segment!
+            didCut = true;
+            World.remove(this.engine.world, seg.body);
+            this.solids = this.solids.filter((b) => b !== seg.body);
+
+            // Spawn falling debris particles
+            const proj = projectPointToSegment({ x: cx, y: cy }, seg.a, seg.b);
+            this.spawnDebris(proj.x, proj.y, cx, cy);
+          } else {
+            remainingSegments.push(seg);
+          }
+        }
+        stroke.segments = remainingSegments;
+      }
+    }
+
+    if (didCut) {
+      const now = Date.now();
+      if (now - this.lastCutSound > 100) {
+        this.lastCutSound = now;
+        playSfx("cut");
+      }
+      this.emit();
+    }
+
+    // Filter out empty strokes
+    this.strokes = this.strokes.filter((s) => s.segments.length > 0);
+  }
+
+  private spawnDebris(x: number, y: number, cx: number, cy: number) {
+    const count = 2 + Math.floor(Math.random() * 2);
+    const angle = Math.atan2(y - cy, x - cx);
+
+    for (let i = 0; i < count; i++) {
+      const dw = 4 + Math.random() * 5;
+      const dh = 4 + Math.random() * 5;
+      const px = x + (Math.random() - 0.5) * 8;
+      const py = y + (Math.random() - 0.5) * 8;
+
+      const body = Bodies.rectangle(px, py, dw, dh, {
+        isStatic: false,
+        isSensor: true,
+        frictionAir: 0.015,
+        restitution: 0.3,
+        label: "debris",
+      });
+
+      // Saw teeth throw direction
+      const tangX = -Math.sin(angle) * 4;
+      const tangY = Math.cos(angle) * 4;
+      const outX = Math.cos(angle) * 2.5;
+      const outY = Math.sin(angle) * 2.5;
+
+      Body.setVelocity(body, {
+        x: tangX + outX + (Math.random() - 0.5) * 3,
+        y: tangY + outY - Math.random() * 2.5,
+      });
+
+      World.add(this.engine.world, body);
+
+      this.debris.push({
+        body,
+        w: dw,
+        h: dh,
+        life: 0,
+        maxLife: 1.5 + Math.random() * 1.0,
+        rotSpeed: (Math.random() - 0.5) * 0.4,
+      });
+    }
+  }
+
   destroy() {
     World.clear(this.engine.world, false);
     Engine.clear(this.engine);
@@ -482,6 +613,26 @@ export class GameEngine {
 }
 
 /* ---------------- helpers ---------------- */
+
+function distToSegmentSq(p: Vec, a: Vec, b: Vec): number {
+  const l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+  if (l2 === 0) return (p.x - a.x) * (p.x - a.x) + (p.y - a.y) * (p.y - a.y);
+  let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  const projX = a.x + t * (b.x - a.x);
+  const projY = a.y + t * (b.y - a.y);
+  const dx = p.x - projX;
+  const dy = p.y - projY;
+  return dx * dx + dy * dy;
+}
+
+function projectPointToSegment(p: Vec, a: Vec, b: Vec): Vec {
+  const l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+  if (l2 === 0) return { x: a.x, y: a.y };
+  let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) };
+}
 
 function overlaps(a: Matter.Body, b: Matter.Body) {
   return (

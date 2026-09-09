@@ -182,7 +182,21 @@ export function render(
   ctx.lineWidth = 6;
   ctx.strokeStyle = INK;
   game.strokes.forEach((s, i) => {
-    drawStroke(ctx, s.points, i);
+    drawStrokeSegments(ctx, s.segments, i);
+  });
+
+  // debris (chopped ink fragments falling down)
+  game.debris.forEach((deb) => {
+    const b = deb.body;
+    ctx.save();
+    ctx.translate(b.position.x, b.position.y);
+    ctx.rotate(b.angle);
+    ctx.fillStyle = INK;
+    ctx.strokeStyle = "rgba(17,17,17,0.7)";
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(-deb.w / 2, -deb.h / 2, deb.w, deb.h);
+    ctx.strokeRect(-deb.w / 2, -deb.h / 2, deb.w, deb.h);
+    ctx.restore();
   });
 
   if (drafting && drafting.length > 1) {
@@ -199,18 +213,43 @@ export function render(
   ctx.restore();
 }
 
-function drawStroke(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[], seed: number) {
+function drawStrokeSegments(
+  ctx: CanvasRenderingContext2D,
+  segments: { a: { x: number; y: number }; b: { x: number; y: number } }[],
+  seed: number,
+) {
+  if (!segments.length) return;
   const rnd = seeded(seed * 31 + 7);
-  for (let pass = 0; pass < 2; pass++) {
-    ctx.beginPath();
-    ctx.lineWidth = pass === 0 ? 6 : 2.5;
-    ctx.strokeStyle = pass === 0 ? INK : "rgba(17,17,17,0.5)";
-    ctx.moveTo(pts[0]!.x, pts[0]!.y);
-    for (let i = 1; i < pts.length; i++) {
-      const o = (rnd() - 0.5) * 1.6;
-      ctx.lineTo(pts[i]!.x + o, pts[i]!.y + o);
+
+  let currentGroup: { a: { x: number; y: number }; b: { x: number; y: number } }[] = [segments[0]!];
+  const groups = [currentGroup];
+
+  for (let i = 1; i < segments.length; i++) {
+    const prev = segments[i - 1]!;
+    const curr = segments[i]!;
+    const dx = prev.b.x - curr.a.x;
+    const dy = prev.b.y - curr.a.y;
+    if (dx * dx + dy * dy < 16) {
+      currentGroup.push(curr);
+    } else {
+      currentGroup = [curr];
+      groups.push(currentGroup);
     }
-    ctx.stroke();
+  }
+
+  for (const group of groups) {
+    const pts = [group[0]!.a, ...group.map((g) => g.b)];
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.beginPath();
+      ctx.lineWidth = pass === 0 ? 6 : 2.5;
+      ctx.strokeStyle = pass === 0 ? INK : "rgba(17,17,17,0.5)";
+      ctx.moveTo(pts[0]!.x, pts[0]!.y);
+      for (let i = 1; i < pts.length; i++) {
+        const o = (rnd() - 0.5) * 1.6;
+        ctx.lineTo(pts[i]!.x + o, pts[i]!.y + o);
+      }
+      ctx.stroke();
+    }
   }
 }
 

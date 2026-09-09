@@ -1,4 +1,4 @@
-type Sfx = "draw" | "jump" | "star" | "win" | "fall" | "error" | "door" | "step" | "click" | "slide";
+type Sfx = "draw" | "jump" | "star" | "win" | "fall" | "error" | "door" | "step" | "click" | "slide" | "cut";
 
 let ctx: AudioContext | null = null;
 let enabled = true;
@@ -71,6 +71,9 @@ export function playSfx(name: Sfx) {
       break;
     case "slide":
       tone(360, 0.08, "triangle", 0.035, 170);
+      break;
+    case "cut":
+      tone(280 + Math.random() * 80, 0.08, "sawtooth", 0.04, 110);
       break;
   }
 }
