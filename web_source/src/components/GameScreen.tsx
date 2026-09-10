@@ -474,14 +474,27 @@ export function GameScreen({ levelId }: Props) {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#f7f4ec] select-none" style={{ touchAction: "none" }}>
       {/* HUD */}
-      <div className="flex items-center gap-2 px-3 py-2 landscape:py-1 z-10">
-        <Link to="/levels" className="btn-ink small" aria-label={t("levels", lang)} onClick={cancelPreviewOnAction}>
-          ☰
-        </Link>
-        <div className="font-hand text-lg leading-none">
-          <span className="opacity-60">{t("level", lang)} {level.id}</span> · {level.name}
+      <div className="flex items-center justify-between px-3 py-2 landscape:py-1 z-10 relative">
+        <div className="flex items-center gap-2 shrink-0">
+          <Link to="/levels" className="btn-ink small" aria-label={t("levels", lang)} onClick={cancelPreviewOnAction}>
+            ☰
+          </Link>
+          <div className="font-hand text-lg leading-none">
+            <span className="opacity-60">{t("level", lang)} {level.id}</span> · {level.name}
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+
+        {/* Small landscape inline hint - sits perfectly between Level Title and Lives */}
+        {phase === "ready" && !((engineRef.current?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0) && (
+          <div className="hidden landscape:flex items-center justify-center gap-1.5 px-3 py-1 bg-[#fffdf7]/95 border border-ink/20 rounded-md shadow-sm max-w-[40%] text-center pointer-events-none mx-2 select-none">
+            <span className="text-[11px] leading-none">💡</span>
+            <span className="font-hand text-xs font-bold text-ink leading-none truncate" title={level.hint}>
+              {level.hint}
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
           <span className="font-hand text-lg" aria-label={t("lives", lang)}>
             {"♥".repeat(Math.max(0, state?.lives ?? 3))}
             <span className="opacity-25">{"♥".repeat(Math.max(0, 3 - (state?.lives ?? 3)))}</span>
@@ -656,12 +669,12 @@ export function GameScreen({ levelId }: Props) {
           </div>
         )}
 
-        {/* level hint text card (shows until first line is drawn or Play button pressed) */}
+        {/* level hint text card (shows until first line is drawn or Play button pressed) - Portrait only */}
         {phase === "ready" && !((engineRef.current?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0) && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 max-w-xs sm:max-w-sm w-full px-4 landscape:absolute landscape:top-1 landscape:left-auto landscape:right-32 landscape:translate-x-0 landscape:max-w-[260px] landscape:px-1 landscape:py-0">
-            <div className="paper-card py-2 px-4 landscape:py-1 landscape:px-2 bg-[#fffdf7]/95 shadow-md text-center">
-              <p className="font-hand text-lg sm:text-xl landscape:text-xs font-bold opacity-90">{level.hint}</p>
-              <p className="font-hand text-xs sm:text-sm landscape:text-[10px] opacity-60 mt-0.5 landscape:mt-0">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 max-w-xs sm:max-w-sm w-full px-4 landscape:hidden">
+            <div className="paper-card py-2 px-4 bg-[#fffdf7]/95 shadow-md text-center">
+              <p className="font-hand text-lg sm:text-xl font-bold opacity-90">{level.hint}</p>
+              <p className="font-hand text-xs sm:text-sm opacity-60 mt-0.5">
                 {mode === "pan" ? t("pan_subhint", lang) : t("ready_subhint", lang)}
               </p>
             </div>
