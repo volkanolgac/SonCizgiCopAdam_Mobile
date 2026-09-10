@@ -479,16 +479,16 @@ export function GameScreen({ levelId }: Props) {
           <Link to="/levels" className="btn-ink small" aria-label={t("levels", lang)} onClick={cancelPreviewOnAction}>
             ☰
           </Link>
-          <div className="font-hand text-lg leading-none">
+          <div className="font-hand text-lg landscape:text-2xl leading-none">
             <span className="opacity-60">{t("level", lang)} {level.id}</span> · {level.name}
           </div>
         </div>
 
         {/* Small landscape inline hint - sits perfectly between Level Title and Lives */}
         {phase === "ready" && !((engineRef.current?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0) && (
-          <div className="hidden landscape:flex items-center justify-center gap-1.5 px-3 py-1 bg-[#fffdf7]/95 border border-ink/20 rounded-md shadow-sm max-w-[40%] text-center pointer-events-none mx-2 select-none">
-            <span className="text-[11px] leading-none">💡</span>
-            <span className="font-hand text-xs font-bold text-ink leading-none truncate" title={level.hint}>
+          <div className="hidden landscape:flex items-center justify-center gap-1.5 max-w-[40%] text-center pointer-events-none mx-2 select-none">
+            <span className="text-[14px] leading-none animate-pulse">💡</span>
+            <span className="font-hand text-sm font-bold text-ink leading-none truncate" title={level.hint}>
               {level.hint}
             </span>
           </div>
