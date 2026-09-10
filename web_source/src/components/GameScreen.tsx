@@ -658,10 +658,10 @@ export function GameScreen({ levelId }: Props) {
 
         {/* level hint text card (shows until first line is drawn or Play button pressed) */}
         {phase === "ready" && !((engineRef.current?.strokes.length ?? 0) > 0 || (state?.inkUsed ?? 0) > 0) && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 max-w-xs sm:max-w-sm w-full px-4">
-            <div className="paper-card py-2 px-4 bg-[#fffdf7]/95 shadow-md text-center">
-              <p className="font-hand text-lg sm:text-xl font-bold opacity-90">{level.hint}</p>
-              <p className="font-hand text-xs sm:text-sm opacity-60 mt-0.5">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-500 max-w-xs sm:max-w-sm w-full px-4 landscape:absolute landscape:top-1 landscape:left-auto landscape:right-32 landscape:translate-x-0 landscape:max-w-[260px] landscape:px-1 landscape:py-0">
+            <div className="paper-card py-2 px-4 landscape:py-1 landscape:px-2 bg-[#fffdf7]/95 shadow-md text-center">
+              <p className="font-hand text-lg sm:text-xl landscape:text-xs font-bold opacity-90">{level.hint}</p>
+              <p className="font-hand text-xs sm:text-sm landscape:text-[10px] opacity-60 mt-0.5 landscape:mt-0">
                 {mode === "pan" ? t("pan_subhint", lang) : t("ready_subhint", lang)}
               </p>
             </div>
