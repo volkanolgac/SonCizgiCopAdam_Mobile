@@ -201,7 +201,7 @@ export class GameEngine {
     );
 
     this.player = Bodies.rectangle(l.start.x, l.start.y, PLAYER_W, PLAYER_H, {
-      chamfer: { radius: 5 },
+      chamfer: { radius: 3 },
       friction: 0.02,
       frictionStatic: 0.05,
       frictionAir: 0.008,
@@ -366,9 +366,15 @@ export class GameEngine {
     return hits.length ? hits[0]! : null;
   }
 
-  private surfaceTop(x: number, fromY: number, maxDepth = 60): number | null {
-    for (let d = 0; d <= maxDepth; d += 2) {
-      if (this.probe(x, fromY + d)) return fromY + d;
+  private surfaceTop(x: number, refY: number, scanRange = 45): number | null {
+    if (!this.probe(x, refY)) {
+      for (let d = 1; d <= scanRange; d += 2) {
+        if (this.probe(x, refY + d)) return refY + d;
+      }
+      return null;
+    }
+    for (let u = 1; u <= scanRange; u += 2) {
+      if (!this.probe(x, refY - u)) return refY - u + 1;
     }
     return null;
   }
@@ -431,6 +437,16 @@ export class GameEngine {
       }
     }
 
+    // Anti-penetration safeguard: if player center is inside a solid collider, safely lift to surface
+    const insideSolid = this.probe(p.position.x, p.position.y);
+    if (insideSolid && insideSolid.label !== "player") {
+      const top = this.surfaceTop(p.position.x, p.position.y, 60);
+      if (top != null) {
+        Body.setPosition(p, { x: p.position.x, y: top - PLAYER_H / 2 });
+        Body.setVelocity(p, { x: p.velocity.x, y: 0 });
+      }
+    }
+
     // ground detection
     const footY = p.position.y + PLAYER_H / 2;
     const under =
@@ -465,17 +481,17 @@ export class GameEngine {
         const norm = Math.sqrt(1 + slope * slope);
         Body.setVelocity(p, {
           x: (dir * moveSpeed) / norm,
-          y: slope < 0 ? (moveSpeed * slope) / norm : p.velocity.y,
+          y: (moveSpeed * slope) / norm,
         });
 
-        // 1. Smooth Step-Up assistance for small lips & line starting edges (1px to 7px)
+        // 1. Smooth Step-Up assistance for small lips & line starting edges (1px to 6px)
         const checkFrontX = p.position.x + dir * 10;
-        const frontTop = this.surfaceTop(checkFrontX, footY - 10, 16);
+        const frontTop = this.surfaceTop(checkFrontX, footY, 16);
         if (frontTop != null) {
           const stepUp = footY - frontTop;
-          if (stepUp > 0.5 && stepUp <= 7) {
-            Body.setPosition(p, { x: p.position.x + dir * 0.5, y: frontTop - PLAYER_H / 2 });
-            Body.setVelocity(p, { x: dir * moveSpeed, y: Math.min(p.velocity.y, -0.5) });
+          if (stepUp > 0.5 && stepUp <= 6) {
+            Body.setPosition(p, { x: p.position.x, y: frontTop - PLAYER_H / 2 });
+            Body.setVelocity(p, { x: dir * moveSpeed, y: -0.5 });
           }
         }
 
