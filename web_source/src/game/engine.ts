@@ -89,6 +89,9 @@ export class GameEngine {
   private stepSfx = 0;
   private slideSfx = 200;
   private lastCutSound = 0;
+  private stuckTimer = 0;
+  private lastPosX = 0;
+  private coyoteTimer = 0;
 
   constructor(level: LevelDef) {
     this.level = level;
@@ -198,6 +201,7 @@ export class GameEngine {
     );
 
     this.player = Bodies.rectangle(l.start.x, l.start.y, PLAYER_W, PLAYER_H, {
+      chamfer: { radius: 5 },
       friction: 0.02,
       frictionStatic: 0.05,
       frictionAir: 0.008,
@@ -225,16 +229,36 @@ export class GameEngine {
     if (length > this.inkLeft) return false;
 
     const segments: StrokeSegment[] = [];
+    const numSegments = pts.length - 1;
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1]!;
       const b = pts[i]!;
       const len = dist(a, b);
       if (len < 2) continue;
-      const body = Bodies.rectangle((a.x + b.x) / 2, (a.y + b.y) / 2, len + 6, 9, {
+
+      const isStart = i === 1;
+      const isEnd = i === numSegments;
+      // Extra length to bridge gaps between interior segments, minimal at ends to prevent blunt vertical steps
+      const extra = isStart && isEnd ? 0 : !isStart && !isEnd ? 3 : 1.5;
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+
+      let midX = (a.x + b.x) / 2;
+      let midY = (a.y + b.y) / 2;
+      // Shift center slightly towards interior for end segments so stroke start/end does not form an artificial ledge
+      if (isStart && !isEnd) {
+        midX += Math.cos(angle) * 1.5;
+        midY += Math.sin(angle) * 1.5;
+      } else if (isEnd && !isStart) {
+        midX -= Math.cos(angle) * 1.5;
+        midY -= Math.sin(angle) * 1.5;
+      }
+
+      const body = Bodies.rectangle(midX, midY, len + extra, 7, {
+        chamfer: { radius: 2.5 },
         isStatic: true,
         friction: 0.85,
         frictionStatic: 1,
-        angle: Math.atan2(b.y - a.y, b.x - a.x),
+        angle,
         label: "ink",
       });
       segments.push({ a, b, body });
@@ -276,6 +300,9 @@ export class GameEngine {
 
   start() {
     if (this.state.phase !== "ready") return;
+    this.stuckTimer = 0;
+    this.coyoteTimer = 0;
+    this.lastPosX = this.player.position.x;
     this.state.phase = "running";
     this.state.message = null;
     this.emit();
@@ -303,8 +330,11 @@ export class GameEngine {
     this.doorEntering = false;
     this.doorAnimTimer = 0;
     this.playerHidden = false;
+    this.stuckTimer = 0;
+    this.coyoteTimer = 0;
     Body.setPosition(this.player, { ...this.respawn });
     Body.setVelocity(this.player, { x: 0, y: 0 });
+    this.lastPosX = this.player.position.x;
     for (const d of this.debris) World.remove(this.engine.world, d.body);
     this.debris = [];
     for (const f of this.fallers) {
@@ -337,7 +367,7 @@ export class GameEngine {
   }
 
   private surfaceTop(x: number, fromY: number, maxDepth = 60): number | null {
-    for (let d = 0; d <= maxDepth; d += 3) {
+    for (let d = 0; d <= maxDepth; d += 2) {
       if (this.probe(x, fromY + d)) return fromY + d;
     }
     return null;
@@ -406,15 +436,25 @@ export class GameEngine {
     const under =
       this.probe(p.position.x, footY + 3) ??
       this.probe(p.position.x - 6, footY + 3) ??
-      this.probe(p.position.x + 6, footY + 3);
+      this.probe(p.position.x + 6, footY + 3) ??
+      this.probe(p.position.x + 8 * this.facing, footY + 3) ??
+      this.probe(p.position.x - 8 * this.facing, footY + 3) ??
+      this.probe(p.position.x, footY + 5);
     this.grounded = !!under && p.velocity.y >= -0.5;
     this.groundBody = this.grounded ? under : null;
     this.onIce = this.grounded && under?.label === "ice";
+
+    if (this.grounded) {
+      this.coyoteTimer = 100;
+    } else {
+      this.coyoteTimer = Math.max(0, this.coyoteTimer - ms);
+    }
 
     if (running) {
       this.state.time += ms / 1000;
       const dir = Math.sign(this.level.door.x - p.position.x) || 1;
       this.facing = dir;
+      const moveSpeed = this.onIce ? RUN_SPEED * 1.8 : RUN_SPEED;
 
       if (this.grounded) {
         // follow the slope of whatever surface we are standing on
@@ -423,20 +463,40 @@ export class GameEngine {
         let slope = 0;
         if (back != null && front != null) slope = clamp((front - back) / 18, -1.3, 1.3);
         const norm = Math.sqrt(1 + slope * slope);
-        const moveSpeed = this.onIce ? RUN_SPEED * 1.8 : RUN_SPEED;
         Body.setVelocity(p, {
           x: (dir * moveSpeed) / norm,
           y: slope < 0 ? (moveSpeed * slope) / norm : p.velocity.y,
         });
 
-        // small automatic hop over low ledges
-        const aheadLow = this.probe(p.position.x + dir * 13, footY - 6);
-        if (aheadLow) {
-          const top = this.surfaceTop(p.position.x + dir * 13, footY - 42, 44);
-          if (top != null && footY - top <= 34) {
-            Body.setVelocity(p, { x: dir * moveSpeed, y: -7.2 });
-            playSfx("jump");
-            this.animState = "jump";
+        // 1. Smooth Step-Up assistance for small lips & line starting edges (1px to 7px)
+        const checkFrontX = p.position.x + dir * 10;
+        const frontTop = this.surfaceTop(checkFrontX, footY - 10, 16);
+        if (frontTop != null) {
+          const stepUp = footY - frontTop;
+          if (stepUp > 0.5 && stepUp <= 7) {
+            Body.setPosition(p, { x: p.position.x + dir * 0.5, y: frontTop - PLAYER_H / 2 });
+            Body.setVelocity(p, { x: dir * moveSpeed, y: Math.min(p.velocity.y, -0.5) });
+          }
+        }
+
+        // 2. Multi-height hop over ledges, walls and drawn lines (7px to 36px)
+        const checkHopX = p.position.x + dir * 13;
+        const obstacleAhead =
+          this.probe(checkHopX, footY - 4) ??
+          this.probe(checkHopX, footY - 8) ??
+          this.probe(checkHopX, footY - 16) ??
+          this.probe(p.position.x + dir * 9, footY - 4) ??
+          this.probe(p.position.x + dir * 9, footY - 8);
+
+        if (obstacleAhead && obstacleAhead.label !== "player") {
+          const top = this.surfaceTop(checkHopX, footY - 42, 46);
+          if (top != null) {
+            const obstacleH = footY - top;
+            if (obstacleH > 6 && obstacleH <= 36) {
+              Body.setVelocity(p, { x: dir * moveSpeed, y: -7.2 });
+              playSfx("jump");
+              this.animState = "jump";
+            }
           }
         }
 
@@ -456,7 +516,47 @@ export class GameEngine {
         }
       } else if (Math.abs(p.velocity.x) < RUN_SPEED * 0.9) {
         Body.setVelocity(p, { x: dir * RUN_SPEED * 0.9, y: p.velocity.y });
+
+        // Mid-air coyote hop if stepped off a ledge right in front of an obstacle
+        if (this.coyoteTimer > 0) {
+          const checkHopX = p.position.x + dir * 13;
+          const obstacleAhead =
+            this.probe(checkHopX, footY - 4) ??
+            this.probe(checkHopX, footY - 10);
+          if (obstacleAhead && obstacleAhead.label !== "player") {
+            const top = this.surfaceTop(checkHopX, footY - 42, 46);
+            if (top != null && footY - top <= 36) {
+              Body.setVelocity(p, { x: dir * moveSpeed, y: -7.2 });
+              playSfx("jump");
+              this.animState = "jump";
+              this.coyoteTimer = 0;
+            }
+          }
+        }
       }
+
+      // 3. Anti-stuck safeguard: If forward movement is blocked by line start or corner
+      const movedX = Math.abs(p.position.x - this.lastPosX);
+      if (this.grounded && movedX < 0.2) {
+        this.stuckTimer += ms;
+        if (this.stuckTimer >= 100) {
+          this.stuckTimer = 0;
+          const blockedFront =
+            this.probe(p.position.x + dir * 9, footY - 2) ??
+            this.probe(p.position.x + dir * 9, footY - 8) ??
+            this.probe(p.position.x + dir * 12, footY - 4) ??
+            this.probe(p.position.x + dir * 12, footY - 12);
+
+          if (blockedFront && blockedFront.label !== "player") {
+            Body.setVelocity(p, { x: dir * moveSpeed, y: -7.2 });
+            playSfx("jump");
+            this.animState = "jump";
+          }
+        }
+      } else {
+        this.stuckTimer = Math.max(0, this.stuckTimer - ms * 0.5);
+      }
+      this.lastPosX = p.position.x;
     } else if (this.state.phase === "ready") {
       Body.setVelocity(p, { x: 0, y: p.velocity.y });
     }
